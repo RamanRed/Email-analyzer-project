@@ -8,8 +8,8 @@ import os
 load_dotenv()
 
 # Email configuration
-sender_mail = "ramanrandive2004@gmail.com"  # Must be Gmail
-receiver_mail = "ramanrandive2004@gmail.com"
+sender_mail = os.getenv("USER_MAIL)  # Must be Gmail
+receiver_mail = os.getenv("USER_MAIL)
 sender_password = os.getenv("SENDER_MAIL_PASSWORD")  # Gmail App Password
 
 # Create the email message
