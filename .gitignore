@@ -1,0 +1,60 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+bower_components/
+
+# Build directories
+dist/
+build/
+out/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Environment files
+.env
+.env.*
+
+# System files
+*.swp
+*.lock
+*.tmp
+
+# Compiled source
+*.class
+*.o
+*.so
+*.exe
+*.dll
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+pip-log.txt
+
+# macOS
+*.DS_Store
+
+# Linux
+*~
+
+# Windows
+ehthumbs.db
+Desktop.ini
