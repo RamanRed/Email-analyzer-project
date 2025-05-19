@@ -4,7 +4,7 @@ import email
 from dotenv import load_dotenv
 from email.header import decode_header
 import google.generativeai as genai
-
+from createreply_template import generate_email_reply
 # --- Load environment variables ---
 load_dotenv()
 GMAIL_USER = os.getenv("GMAIL_USER")
@@ -30,42 +30,52 @@ email_ids = messages[0].split()
 listmails = []
 all_bodies = ""
 
-for eid in email_ids[-10:]:  # Limit to 10 latest emails
+# Fetch latest 10 emails (or fewer if less than 10)
+for eid in email_ids[-10:]:
     status, msg_data = mail.fetch(eid, "(RFC822)")
+    if status != 'OK' or not msg_data or not msg_data[0]:
+        continue  # Skip if fetching fails or response is malformed
+    
     raw_email = msg_data[0][1]
     email_message = email.message_from_bytes(raw_email)
 
-    # Decode subject
-    subject, encoding = decode_header(email_message["subject"])[0]
+    # Decode subject safely
+    subject, encoding = decode_header(email_message.get("subject", ""))[0]
     if isinstance(subject, bytes):
-        subject = subject.decode(encoding if encoding else "utf-8", errors="ignore")
+        subject = subject.decode(encoding or "utf-8", errors="ignore")
+    subject = subject.strip() or "(No Subject)"  # fallback if subject is empty
 
     # Extract plain text body
     body = ""
     if email_message.is_multipart():
         for part in email_message.walk():
-            if part.get_content_type() == "text/plain" and part.get("Content-Disposition") is None:
-                body += part.get_payload(decode=True).decode(errors="ignore")
+            if part.get_content_type() == "text/plain" and not part.get("Content-Disposition"):
+                payload = part.get_payload(decode=True)
+                if payload:
+                    body += payload.decode(errors="ignore")
     else:
-        body = email_message.get_payload(decode=True).decode(errors="ignore")
+        payload = email_message.get_payload(decode=True)
+        if payload:
+            body = payload.decode(errors="ignore")
 
+    # Append to listmails and all_bodies string
     mail_dic = {subject: body}
     listmails.append(mail_dic)
     all_bodies += f"\n--- Email ---\nSubject: {subject}\n{body.strip()[:1000]}\n"
 
+
 # --- Build prompt ---
-prompt = (
-    """
-    Given the following emails, classify each email into relevant categories based on its content.
+prompt = f"""
+Given the following emails, classify each email into relevant categories based on its content.
 
 Output a valid Python dictionary only.
 
 The dictionary should follow this structure:
-{
+{{
   "Category Name 1": [list of email indices],
   "Category Name 2": [list of email indices],
   ...
-}
+}}
 
 Notes:
 - Indexing starts from 0.
@@ -76,9 +86,7 @@ Notes:
 
 Here are the emails:
 {all_bodies}
-
-    """
-)
+"""
 
 
 
@@ -150,9 +158,10 @@ def reply_email(listmails):
             # storing the body of mail
             body=listmails[idx][subject]
             # here i will initate the langchain function to reply
-            print(f"\n📤 Replying to: {subject}")
-            reply = input("Enter your reply message: ")
-            print(f"\n✅ Simulated reply sent:\n{reply}")
+            generate_email_reply(subject, body)
+            # print(f"\n📤 Replying to: {subject}")
+            # reply = input("Enter your reply message: ")
+            # print(f"\n✅ Simulated reply sent:\n{reply}")
         else:
             print("❌ Invalid index.")
     except ValueError:
@@ -172,7 +181,7 @@ print(category_map.keys())  # List of categories
 
 print("\n🧠 Gemini Categorization:\n", response_text)
 
-
+print(len(listmails))
 # --- Main loop ---
 while True:
     show_menu()
